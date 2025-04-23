@@ -21,8 +21,8 @@ const SubscriptionSchema = new mongoose.Schema({
   },
   frequency: {
     type: String,
-    // required: [true, "Subscription Frequency is required"],
-    enum: ["daily", "weekly", "monthly", "yearly"],
+    required: [true, "Subscription Frequency is required"],
+    enum: ["daily", "weekly", "monthly", "yearly", "other"],
   },
   category: {
     type: String,
