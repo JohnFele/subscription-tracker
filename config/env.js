@@ -3,7 +3,8 @@ import { config } from 'dotenv';
 config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 
 export const { 
-  PORT, 
+  PORT,
+  SERVER_URL,
   NODE_ENV, 
   DB_URI,
   JWT_SECRET,
@@ -12,4 +13,6 @@ export const {
   ARCJET_ENV,
   QSTASH_URL,
   QSTASH_TOKEN,
+  GMAIL_PASS,
+  GMAIL_USER,
 } = process.env;
