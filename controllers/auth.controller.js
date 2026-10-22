@@ -36,12 +36,12 @@ export const signUp = async (req, res, next) => {
     const { password: _, __v, ...userData } = user._doc;
 
     await session.commitTransaction();
-    session.endSession();
+    await session.endSession();
 
     res.cookie("accessToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 1000 * 60 * 60, // 1 hour
     });
 
@@ -55,7 +55,7 @@ export const signUp = async (req, res, next) => {
 
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
+    await session.endSession();
     return next(error);
   }
 };
@@ -87,7 +87,7 @@ export const signIn = async (req, res, next) => {
     res.cookie("accessToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 1000 * 60 * 60, // 1 hour
     });
 
@@ -109,7 +109,7 @@ export const signOut = async (req, res, next) => {
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "none",
     });
 
     res.status(200).json({
