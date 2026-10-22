@@ -16,12 +16,17 @@ const SubscriptionSchema = new mongoose.Schema({
   currency: {
     type: String,
     required: [true, "Subscription Currency is required"],
-    enum: ["USD", "EUR", "GBP", "INR", "AUD", "CAD", "JPY"],
-    default: "USD",
+    uppercase: true,
+    match: [/^[A-Z]{3}$/, "Subscription Currency must be a three-letter ISO code"],
+    default: "ZAR",
+  },
+  recurring: {
+    type: Boolean,
+    default: true,
   },
   frequency: {
     type: String,
-    // required: [true, "Subscription Frequency is required"],
+    required: function () { return this.recurring !== false; },
     enum: ["daily", "weekly", "monthly", "yearly"],
   },
   category: {
@@ -37,6 +42,13 @@ const SubscriptionSchema = new mongoose.Schema({
       "education",
       "technology",
       "travel",
+      "productivity",
+      "communication",
+      "utilities",
+      "shopping",
+      "finance",
+      "home",
+      "lifestyle",
       "other",
     ],
   },
@@ -65,10 +77,10 @@ const SubscriptionSchema = new mongoose.Schema({
   },
   renewalDate: {
     type: Date,
-    required: true,
+    required: function () { return this.recurring !== false; },
     validate: {
       validator: function (value) {
-        return value > this.startDate;
+        return this.recurring === false || (value && value > this.startDate);
       },
       message: "Renewal date must be after the start date",
     },
@@ -81,9 +93,9 @@ const SubscriptionSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-//auto-calculate renewal date based on frequency
+// Auto-calculate renewal dates only for recurring subscriptions.
 SubscriptionSchema.pre("save", function (next) {
-  if (!this.renewalDate) {
+  if (this.recurring !== false && !this.renewalDate) {
     const frequencyMap = {
       daily: 1,
       weekly: 7,
@@ -95,7 +107,7 @@ SubscriptionSchema.pre("save", function (next) {
   }
 
   //auto-update the status of the subscription if the renewal date has passed
-  if (this.renewalDate < new Date()) {	
+  if (this.recurring !== false && this.renewalDate < new Date()) {
     this.status = "expired";
   }
 

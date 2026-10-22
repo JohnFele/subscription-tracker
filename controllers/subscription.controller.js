@@ -1,11 +1,17 @@
 import Subscription from "../models/subscription.model.js";
+import User from "../models/user.model.js";
+import { enrichSubscriptions } from "../services/currency.service.js";
 
 export const createSubscription = async (req, res, next) => {
   try {
-    const subscription = await Subscription.create({ ...req.body, user : req.user._id });
+    const subscription = await Subscription.create({
+      ...req.body,
+      currency: req.body.currency ?? req.user.defaultCurrency ?? "ZAR",
+      user: req.user._id,
+    });
     res.status(201).json({
       success: true,
-      data:subscription,
+      data: (await enrichSubscriptions([subscription], req.user.defaultCurrency ?? "ZAR"))[0],
       message: "Subscription created successfully",
     });
   } catch (error) {
@@ -32,7 +38,7 @@ export const getAllSubscriptions = async (req, res, next) => {
       total,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
-      data: subscriptions,
+      data: await enrichSubscriptions(subscriptions, req.user.defaultCurrency ?? "ZAR"),
       message: "Subscriptions fetched successfully",
     });
   } catch (error) {
@@ -54,7 +60,7 @@ export const getSubscription = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: subscription,
+      data: (await enrichSubscriptions([subscription], req.user.defaultCurrency ?? "ZAR"))[0],
       message: "Subscription fetched successfully",
     });
 
@@ -67,10 +73,7 @@ export const updateSubscription = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const subscription = await Subscription.findOneAndUpdate({ _id: id, user: req.user._id }, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const subscription = await Subscription.findOne({ _id: id, user: req.user._id });
 
     if (!subscription) {
       return res.status(404).json({
@@ -79,9 +82,27 @@ export const updateSubscription = async (req, res, next) => {
       });
     }
 
+    const editableFields = [
+      "name",
+      "price",
+      "currency",
+      "recurring",
+      "frequency",
+      "category",
+      "paymentMethod",
+      "status",
+      "startDate",
+      "renewalDate",
+    ];
+    const updates = req.body ?? {};
+    for (const field of editableFields) {
+      if (Object.prototype.hasOwnProperty.call(updates, field)) subscription.set(field, updates[field]);
+    }
+    await subscription.save();
+
     res.status(200).json({
       success: true,
-      data: subscription,
+      data: (await enrichSubscriptions([subscription], req.user.defaultCurrency ?? "ZAR"))[0],
       message: "Subscription updated successfully",
     });
 
@@ -127,12 +148,13 @@ export const getUserSubscriptions = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const [subscriptions, total] = await Promise.all([
+    const [subscriptions, total, owner] = await Promise.all([
       Subscription.find({ user: userId })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
       Subscription.countDocuments({ user: userId }),
+      User.findById(userId).select("defaultCurrency"),
     ]);
     
     if (subscriptions.length === 0) {
@@ -147,7 +169,7 @@ export const getUserSubscriptions = async (req, res, next) => {
       total,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
-      data: subscriptions,
+      data: await enrichSubscriptions(subscriptions, owner?.defaultCurrency ?? "ZAR"),
       message: "Subscriptions fetched successfully",
     });
 
@@ -190,7 +212,7 @@ export const cancelSubscription = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: subscription,
+      data: (await enrichSubscriptions([subscription], req.user.defaultCurrency ?? "ZAR"))[0],
       message: "Subscription cancelled successfully",
     });
   } catch (error) {
@@ -225,7 +247,7 @@ export const getUpcomingSubscriptions = async (req, res, next) => {
       total,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
-      data: subscriptions,
+      data: await enrichSubscriptions(subscriptions, req.user.defaultCurrency ?? "ZAR"),
       message: "Upcoming subscriptions fetched successfully",
     });
   } catch (error) {
