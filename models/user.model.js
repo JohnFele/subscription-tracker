@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { SUPPORTED_CURRENCIES } from "../config/currencies.js";
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -27,6 +28,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["user", "admin"],
     default: "user",
+  },
+  defaultCurrency: {
+    type: String,
+    enum: SUPPORTED_CURRENCIES,
+    default: "ZAR",
   },
 }, { timestamps: true });
 

@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import { DB_URI, NODE_ENV } from "../config/env.js";
 
 if(!DB_URI) {
-  throw new Error("DB_URI is not defined in the environment variables(.env.<development|production>.local) file.");
-}
+    throw new Error("DB_URI is not defined in the environment variables(.env.<development|production>.local) file.");
+  }
 
 const connectDB = async () => {
   try {

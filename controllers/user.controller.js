@@ -89,11 +89,14 @@ export const updateUser = async (req, res, next) => {
       });
     }
 
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, defaultCurrency } = req.body;
     const updateFields = {};
 
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
+    if (Object.prototype.hasOwnProperty.call(req.body, "defaultCurrency")) {
+      updateFields.defaultCurrency = String(defaultCurrency).trim().toUpperCase();
+    }
 
     if (role && req.user.role === "admin") {
       updateFields.role = role;
